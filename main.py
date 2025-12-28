@@ -12,4 +12,4 @@ song = choice(
             (song, f"{song.name} - {','.join(song.artist)}") for song in song_list
         ],
     )
-crawler.download_song(song,lyric=confirm('是否下载歌词? ',suffix="(Y/n)") or True)
+song.download(lyric=confirm('是否下载歌词? ',suffix="(Y/n)") or True)

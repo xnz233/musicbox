@@ -13,7 +13,7 @@ HEADERS = {
 @dataclass
 class Song:
     """
-    歌曲信息类
+    歌曲类
     """
 
     album: str
@@ -73,6 +73,27 @@ class Song:
             lyric = json_data["lyric"]
             self._lyric = lyric
             return lyric
+        
+    def download(self, lyric=True,output_folder:str='output'):
+        """下载Song中的一首歌曲或歌词
+
+        Args:
+            self (Song): 歌曲对象
+            lyric (bool, optional): 是否需要歌词, 默认需要
+            output_folder (str, optional): 输出目录
+        """
+        os.makedirs(output_folder,exist_ok=True)
+        if url := self.music_url:
+            filename =f"{self.name} - {','.join(self.artist)}"
+            file_path = os.path.join(output_folder,filename)
+            print(f'下载 {filename} 中...',end='\t')
+            resp = requests.get(url, headers=HEADERS)
+            with open(file_path + ".mp3", "wb") as f:
+                f.write(resp.content)
+            if lyric and self.lyric:    
+                with open(file_path + ".lrc", "w") as f:
+                    f.write(self.lyric)
+            print('下载成功！')
 
 
 def search_music(song_name: str) -> List[Song]:
@@ -114,26 +135,8 @@ def search_music(song_name: str) -> List[Song]:
     return song_list
 
 
-def download_song(song: Song, lyric=True,output_folder:str='output'):
-    """下载Song中的一首歌曲或歌词
 
-    Args:
-        song (Song): 歌曲对象
-        lyric (bool, optional): 是否需要歌词, 默认需要
-        output_folder (str, optional): 输出目录
-    """
-    os.makedirs(output_folder,exist_ok=True)
-    if url := song.music_url:
-        file_name = os.path.join(output_folder,f"{song.name} - {','.join(song.artist)}")
-        print(f'下载 {file_name} 中...')
-        resp = requests.get(url, headers=HEADERS)
-        with open(file_name + ".mp3", "wb") as f:
-            f.write(resp.content)
-        if lyric and song.lyric:    
-            with open(file_name + ".lrc", "w") as f:
-                f.write(song.lyric)
-        print('下载成功！')
 
 if __name__ == "__main__":
     song_list = search_music("always online")
-    download_song(song_list[0])
+    song_list[0].download()
