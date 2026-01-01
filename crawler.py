@@ -2,6 +2,7 @@ from typing import List, Optional, Literal
 import requests
 import os
 from dataclasses import dataclass
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 URL = "http://www.yinyueku.cn/api.php"
 HEADERS = {
@@ -86,14 +87,17 @@ class Song:
         if url := self.music_url:
             filename =f"{self.name} - {','.join(self.artist)}"
             file_path = os.path.join(output_folder,filename)
-            print(f'下载 {filename} 中...',end='\t')
+            if os.path.exists(file_path + ".mp3"):
+                print(f"跳过已下载歌曲：{filename}")
+                return
+            print(f'下载 {filename} 中...')
             resp = requests.get(url, headers=HEADERS)
             with open(file_path + ".mp3", "wb") as f:
                 f.write(resp.content)
             if lyric and self.lyric:    
                 with open(file_path + ".lrc", "w") as f:
                     f.write(self.lyric)
-            print('下载成功！')
+            print(f'{filename} 下载成功！')
 
 
 def search_music(song_name: str) -> List[Song]:
@@ -135,7 +139,55 @@ def search_music(song_name: str) -> List[Song]:
     return song_list
 
 
+def batch_download(songs: List['Song'], lyric: bool = True, 
+                      output_folder: str = 'output', max_workers: int = 5) -> None:
+        """多线程批量下载歌曲
+        
+        Args:
+            songs: 歌曲对象列表
+            lyric: 是否下载歌词
+            output_folder: 输出目录
+            max_workers: 最大线程数
+        """
+        os.makedirs(output_folder, exist_ok=True)
+        
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            # 提交所有下载任务
+            futures = [
+                executor.submit(song.download, lyric=lyric, output_folder=output_folder)
+                for song in songs
+            ]
+            
+            # 等待所有任务完成并处理结果
+            for future in as_completed(futures):
+                try:
+                    future.result()  # 可以获取异常信息
+                except Exception as e:
+                    print(f"下载任务出错: {str(e)}")
 
+def batch_search(songs_name: List[str],max_workers: int = 5) -> List[Song]:
+    """多线程搜索歌曲
+    获取搜索结果中第一项
+
+    Args:
+        songs_name (List[str]): 歌曲名列表
+        max_workers (int, optional): 最大线程数
+
+    Returns:
+        List[Song]: 多个搜索结果第一项的Song对象列表
+    """
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = [executor.submit(search_music,song_name)
+                   for song_name in songs_name]
+        
+        results:List[Song] = []
+        for future in as_completed(futures):
+                try:
+                    result=future.result()
+                    results.append(result[0])
+                except Exception as e:
+                    print(f"下载任务出错: {str(e)}")
+    return results
 
 if __name__ == "__main__":
     song_list = search_music("always online")

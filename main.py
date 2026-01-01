@@ -59,11 +59,13 @@ def _download_from_txt(need_lyric):
     filename = "music.txt"
     if os.path.exists(filename):
         with open(filename) as f:
+            songs_name=[]
             for song_name in f:
-                if song_name.startswith("#"):
+                if song_name.startswith("#"): # 忽略#开头的行
                     continue
-                song = crawler.search_music(song_name)[0]
-                song.download(need_lyric)
+                songs_name.append(song_name)
+            songs:List[crawler.Song] = crawler.batch_search(songs_name)
+            crawler.batch_download(songs,need_lyric)
     else:
         with open(filename, "w") as f:
             print(f"已创建搜索文件{filename},填写后重新运行")
