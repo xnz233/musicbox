@@ -1,0 +1,23 @@
+on:
+  push:
+    tags:
+    - "v*"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.1
+      
+      - name: Build
+        uses: JackMcKew/pyinstaller-action-windows@main
+        with:
+          path: .
+          spec: main.py
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: musicbox
+          path: dist/windows
+  
