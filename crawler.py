@@ -191,6 +191,28 @@ def batch_search(songs_name: List[str],max_workers: int = 5) -> List[Song]:
                     print(f"下载任务出错: {str(e)}")
     return results
 
+def _get_songlist_from_url(url) -> Optional[List[str]]:
+    URL = "https://sss.unmeta.cn/songlist?detailed=false&format=song-singer"
+    data = {'url':url}
+    try:
+        resp = requests.post(URL,data=data,headers=HEADERS)
+        resp = resp.json()
+        if not resp['msg']=='success':
+            raise Exception(resp['msg'])
+        data = resp['data']
+        print("解析歌单成功：",data['name'])
+        return data['songs']    
+    except Exception as e:
+        print(f"解析歌单失败: {e}")
+        return None
+
+def download_from_url(url:str,lyric: bool = True):
+    if songs := _get_songlist_from_url(url):
+        songs_obj  = batch_search(songs)
+        batch_download(songs_obj)
+
 if __name__ == "__main__":
-    song_list = search_music("always online")
-    song_list[0].download()
+    # song_list = search_music("always online")
+    # song_list[0].download()
+    _get_songlist_from_url('1')
+    # _get_songlist_from_url('https://music.163.com/#/playlist?id=17438630520')

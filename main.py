@@ -64,11 +64,9 @@ def _download_from_txt(need_lyric):
     if not os.path.exists(filename):
         with open(filename, "w", encoding="UTF-8") as f:
             print(f"已创建搜索文件 {filename} ,填写后保存")
-            f.write(
-                "# 请在下面每输入要搜索的歌名，一行一首\n# 以'#'开头的行将被忽略\n"
-            )
-        prompt('保存后请回车确认...')
-    with open(filename,encoding="UTF-8") as f:
+            f.write("# 请在下面每输入要搜索的歌名，一行一首\n# 以'#'开头的行将被忽略\n")
+        prompt("保存后请回车确认...")
+    with open(filename, encoding="UTF-8") as f:
         songs_name = []
         for song_name in f:
             if song_name.startswith("#"):  # 忽略#开头的行
@@ -76,6 +74,12 @@ def _download_from_txt(need_lyric):
             songs_name.append(song_name)
         songs: List[crawler.Song] = crawler.batch_search(songs_name)
         crawler.batch_download(songs, need_lyric)
+
+
+@register_options("从歌单下载")
+def _download_from_url(need_lyric):
+    url = prompt("请输入歌单URL: ")
+    crawler.download_from_url(url, need_lyric)
 
 
 def main():
@@ -87,10 +91,10 @@ def main():
     )
     selected_option.handler(need_lyric)
 
+
 if __name__ == "__main__":
     print("MP3用户建议下载歌词")
     while True:
         main()
-        if not confirm('是否重新运行?','(y/N)'):
+        if not confirm("是否重新运行?", "(y/N)"):
             break
-        
