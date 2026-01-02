@@ -43,7 +43,7 @@ def _download_single(need_lyric):
     提示用户输入歌曲名，进行搜索，然后让用户从搜索结果中
     选择一首歌曲进行下载
     """
-    song_name = prompt("请输入查找的歌曲名称:")
+    song_name = prompt("请输入查找的歌曲名称: ")
     song_list = crawler.search_music(song_name)
     song = choice(
         "请选择要下载的歌曲",
@@ -78,8 +78,7 @@ def _download_from_txt(need_lyric):
         crawler.batch_download(songs, need_lyric)
 
 
-if __name__ == "__main__":
-    print("MP3用户建议下载歌词")
+def main():
     need_lyric = confirm("是否下载歌词? ", suffix="(Y/n)") or True
 
     selected_option = choice(
@@ -87,4 +86,11 @@ if __name__ == "__main__":
         options=[(option, option.name) for option in download_options],
     )
     selected_option.handler(need_lyric)
-    prompt('按回车键退出...')
+
+if __name__ == "__main__":
+    print("MP3用户建议下载歌词")
+    while True:
+        main()
+        if not confirm('是否重新运行?','(y/N)'):
+            break
+        
