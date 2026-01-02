@@ -1,3 +1,5 @@
+"""负责歌曲类管理和数据爬取"""
+
 from typing import List, Optional, Literal
 import requests
 import os
