@@ -76,8 +76,8 @@ class Song:
             lyric = json_data["lyric"]
             self._lyric = lyric
             return lyric
-        
-    def download(self, lyric=True,output_folder:str='output'):
+
+    def download(self, lyric=True, output_folder: str = "output"):
         """下载Song中的一首歌曲或歌词
 
         Args:
@@ -85,21 +85,21 @@ class Song:
             lyric (bool, optional): 是否需要歌词, 默认需要
             output_folder (str, optional): 输出目录
         """
-        os.makedirs(output_folder,exist_ok=True)
+        os.makedirs(output_folder, exist_ok=True)
         if url := self.music_url:
-            filename =f"{self.name} - {','.join(self.artist)}"
-            file_path = os.path.join(output_folder,filename)
+            filename = f"{self.name} - {','.join(self.artist)}"
+            file_path = os.path.join(output_folder, filename)
             if os.path.exists(file_path + ".mp3"):
                 print(f"跳过已下载歌曲：{filename}")
                 return
-            print(f'下载 {filename} 中...')
+            print(f"下载 {filename} 中...")
             resp = requests.get(url, headers=HEADERS)
             with open(file_path + ".mp3", "wb") as f:
                 f.write(resp.content)
-            if lyric and self.lyric:    
+            if lyric and self.lyric:
                 with open(file_path + ".lrc", "w") as f:
                     f.write(self.lyric)
-            print(f'{filename} 下载成功！')
+            print(f"{filename} 下载成功！")
 
 
 def search_music(song_name: str) -> List[Song]:
@@ -141,33 +141,38 @@ def search_music(song_name: str) -> List[Song]:
     return song_list
 
 
-def batch_download(songs: List['Song'], lyric: bool = True, 
-                      output_folder: str = 'output', max_workers: int = 5) -> None:
-        """多线程批量下载歌曲
-        
-        Args:
-            songs: 歌曲对象列表
-            lyric: 是否下载歌词
-            output_folder: 输出目录
-            max_workers: 最大线程数
-        """
-        os.makedirs(output_folder, exist_ok=True)
-        
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            # 提交所有下载任务
-            futures = [
-                executor.submit(song.download, lyric=lyric, output_folder=output_folder)
-                for song in songs
-            ]
-            
-            # 等待所有任务完成并处理结果
-            for future in as_completed(futures):
-                try:
-                    future.result()  # 可以获取异常信息
-                except Exception as e:
-                    print(f"下载任务出错: {str(e)}")
+def batch_download(
+    songs: List["Song"],
+    lyric: bool = True,
+    output_folder: str = "output",
+    max_workers: int = 5,
+) -> None:
+    """多线程批量下载歌曲
 
-def batch_search(songs_name: List[str],max_workers: int = 5) -> List[Song]:
+    Args:
+        songs: 歌曲对象列表
+        lyric: 是否下载歌词
+        output_folder: 输出目录
+        max_workers: 最大线程数
+    """
+    os.makedirs(output_folder, exist_ok=True)
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        # 提交所有下载任务
+        futures = [
+            executor.submit(song.download, lyric=lyric, output_folder=output_folder)
+            for song in songs
+        ]
+
+        # 等待所有任务完成并处理结果
+        for future in as_completed(futures):
+            try:
+                future.result()  # 可以获取异常信息
+            except Exception as e:
+                print(f"下载任务出错: {str(e)}")
+
+
+def batch_search(songs_name: List[str], max_workers: int = 5) -> List[Song]:
     """多线程搜索歌曲
     获取搜索结果中第一项
 
@@ -179,40 +184,44 @@ def batch_search(songs_name: List[str],max_workers: int = 5) -> List[Song]:
         List[Song]: 多个搜索结果第一项的Song对象列表
     """
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = [executor.submit(search_music,song_name)
-                   for song_name in songs_name]
-        
-        results:List[Song] = []
+        futures = [executor.submit(search_music, song_name) for song_name in songs_name]
+
+        results: List[Song] = []
         for future in as_completed(futures):
-                try:
-                    result=future.result()
-                    results.append(result[0])
-                except Exception as e:
-                    print(f"下载任务出错: {str(e)}")
+            try:
+                result = future.result()
+                song = result[0]
+                print('解析中：',song.name)
+                results.append(song)
+            except Exception as e:
+                print(f"下载任务出错: {str(e)}")
     return results
+
 
 def _get_songlist_from_url(url) -> Optional[List[str]]:
     URL = "https://sss.unmeta.cn/songlist?detailed=false&format=song-singer"
-    data = {'url':url}
+    data = {"url": url}
     try:
-        resp = requests.post(URL,data=data,headers=HEADERS)
+        resp = requests.post(URL, data=data, headers=HEADERS)
         resp = resp.json()
-        if not resp['msg']=='success':
-            raise Exception(resp['msg'])
-        data = resp['data']
-        print("解析歌单成功：",data['name'])
-        return data['songs']    
+        if not resp["msg"] == "success":
+            raise Exception(resp["msg"])
+        data = resp["data"]
+        print("解析歌单成功：", data["name"])
+        return data["songs"]
     except Exception as e:
         print(f"解析歌单失败: {e}")
         return None
 
-def download_from_url(url:str,lyric: bool = True):
+
+def download_from_url(url: str, lyric: bool = True):
     if songs := _get_songlist_from_url(url):
-        songs_obj  = batch_search(songs)
-        batch_download(songs_obj)
+        songs_obj = batch_search(songs)
+        batch_download(songs_obj, lyric=lyric)
+
 
 if __name__ == "__main__":
-    # song_list = search_music("always online")
-    # song_list[0].download()
-    _get_songlist_from_url('1')
+    song_list = search_music("always online")
+    song_list[0].download()
+    # _get_songlist_from_url("1")
     # _get_songlist_from_url('https://music.163.com/#/playlist?id=17438630520')
